@@ -1,0 +1,323 @@
+
+#include <Wire.h> 
+#include <LiquidCrystal_I2C.h>
+#include <Wire.h>
+#include "DS3231.h"
+#include "DHT.h"
+#include <BMP180.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
+
+LiquidCrystal_I2C lcd(0x27,20,4);  // set the LCD address to 0x27 for a 16 chars and 2 line display
+DS3231 RTC; //Create the R8025 object
+
+char weekDay[][14] = {"Poniedzialek", "Wtorek", "Sroda", "Czwartek", "Piatek", "Sobota", "Niedziela" };
+
+#define DHTPIN11 2     // what pin we're connected to
+#define DHTPIN22 3     // what pin we're connected to
+
+#define DHTTYPE11 DHT11   // DHT 11 
+#define DHTTYPE22 DHT22   // DHT 22  (AM2302)
+
+DHT dht11(DHTPIN11, DHTTYPE11);  // Initialize DHT sensor for normal 16mhz Arduino
+DHT dht22(DHTPIN22, DHTTYPE22);  // Initialize DHT sensor for normal 16mhz Arduino
+
+BMP180 barometer; // Store an instance of the BMP180 sensor.
+
+float seaLevelPressure = 97960; // Store the current sea level pressure at your location in Pascals.
+
+#define ONE_WIRE_BUS1 11 // Data wire is plugged into port 2 on the Arduino
+#define ONE_WIRE_BUS2 12 // Data wire is plugged into port 2 on the Arduino
+#define ONE_WIRE_BUS3 9 // Data wire is plugged into port 2 on the Arduino
+
+OneWire oneWire1(ONE_WIRE_BUS1);  // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
+OneWire oneWire2(ONE_WIRE_BUS2);  // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
+OneWire oneWire3(ONE_WIRE_BUS3);
+
+DallasTemperature sensors1(&oneWire1);  // Pass our oneWire reference to Dallas Temperature. 
+DallasTemperature sensors2(&oneWire2);  // Pass our oneWire reference to Dallas Temperature.
+DallasTemperature sensors3(&oneWire3);
+
+void setup()
+{
+  lcd.init();                      // initialize the lcd  
+  lcd.backlight();
+ 
+  Serial.begin(9600);
+  Wire.begin();
+  RTC.begin();
+ 
+  RTC.convertTemperature();             //convert current temperature into registers
+ 
+  dht11.begin();
+  dht22.begin();
+  
+  barometer = BMP180(); // We create an instance of our BMP180 sensor.
+  barometer.SoftReset();  // When we have connected, we reset the device to ensure a clean start.
+  barometer.Initialize();  // Now we initialize the sensor and pull the calibration data.
+  
+  sensors1.begin();   // Start up the library
+  sensors2.begin();   // Start up the library
+}
+
+
+void LCDWelcome()
+{
+   lcd.setCursor(0,0);
+   lcd.print("Prosta stacja "); 
+   lcd.setCursor(0,1);
+   lcd.print("pogodowa z "); 
+   lcd.setCursor(0,2);
+   lcd.print("wykorzystaniem "); 
+   lcd.setCursor(0,3);
+   lcd.print("Arduino          :-)"); 
+}
+
+
+void LCDDS3231()
+{
+    DateTime now = RTC.now(); //get the current date-time
+    RTC.convertTemperature();    //convert current temperature into registers
+    
+    lcd.setCursor(0,0);
+    lcd.print("T=");
+    if (now.hour()<10) lcd.print("0"); 
+    lcd.print(now.hour(), DEC);
+    lcd.print(':');
+    if (now.minute()<10) lcd.print("0"); 
+    lcd.print(now.minute(), DEC);
+    lcd.print(':');
+    if (now.second()<10) lcd.print("0"); 
+    lcd.print(now.second(), DEC);
+    
+    lcd.setCursor(0,1);
+    lcd.print("D=");
+    if (now.date()<10) lcd.print("0"); 
+    lcd.print(now.date(), DEC);
+    lcd.print('/');
+    if (now.month()<10) lcd.print("0"); 
+    lcd.print(now.month(), DEC);
+    lcd.print('/');
+    lcd.print(now.year(), DEC);
+    
+    lcd.setCursor(0,2);
+    lcd.print("W=");
+    lcd.print(weekDay[now.dayOfWeek()]);
+    
+    lcd.setCursor(0,3);   
+    lcd.print("T=");    
+    lcd.print(RTC.getTemperature()); //read registers and display the temperature
+    lcd.print("C");
+    lcd.setCursor(9,3);
+    lcd.print("   /DS3231/");
+}
+
+void LCDDH11()
+{
+  // Wait a few seconds between measurements.
+  // delay(2000);
+  
+  // Reading temperature or humidity takes about 250 milliseconds!
+  // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+  
+  float h11 = dht11.readHumidity();
+  // Read temperature as Celsius
+  float t11 = dht11.readTemperature();
+  // Read temperature as Fahrenheit
+  float f11 = dht11.readTemperature(true);
+  
+  // Must send in temp in Fahrenheit!
+  float hi111 = dht11.computeHeatIndex(f11, h11);
+  float hi11 = (hi111-32) / 1.8;
+
+  lcd.setCursor(0,0);
+  lcd.print("H=");
+  lcd.print(h11);
+  lcd.print("%");
+  lcd.setCursor(0,1);
+  lcd.print("T=");
+  lcd.print(t11);
+  lcd.print("C");
+  lcd.setCursor(0,2);
+  lcd.print("Hi=");
+  lcd.print(hi11);
+  lcd.print("C");
+  lcd.setCursor(9,3);
+  lcd.print("     /DH11/");
+}
+
+void LCDDH22()
+{
+  // Wait a few seconds between measurements.
+  // delay(2000);
+  
+  // Reading temperature or humidity takes about 250 milliseconds!
+  // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+    
+  float h22 = dht22.readHumidity();
+  // Read temperature as Celsiusa ja 
+  float t22 = dht22.readTemperature();
+  // Read temperature as Fahrenheit
+  float f22 = dht22.readTemperature(true);
+  
+  // Must send in temp in Fahrenheit!
+  float hi122 = dht22.computeHeatIndex(f22, h22);
+  float hi22 = (hi122-32) / 1.8;
+    
+  lcd.setCursor(0,0);
+  lcd.print("H=");
+  lcd.print(h22);
+  lcd.print("%");
+  lcd.setCursor(0,1);
+  lcd.print("T=");
+  lcd.print(t22);
+  lcd.print("C");
+  lcd.setCursor(0,2);
+  lcd.print("Hi=");
+  lcd.print(hi22);
+  lcd.print("C");
+  lcd.setCursor(9,3);
+  lcd.print("     /DH22/");
+}
+
+void LCDBMP180()
+{
+  float currentPressure = barometer.GetPressure(); // Retrive the current pressure in Pascals.
+  float currentPressurehp = (currentPressure /100);
+  float altitude = barometer.GetAltitude(seaLevelPressure);   // Retrive the current altitude (in meters). Current Sea Level Pressure is required for this.
+  float currentTemperature = barometer.GetTemperature(); // Retrive the current temperature in degrees celcius. 
+   
+  lcd.setCursor(0,0); 
+  lcd.print("P=");
+  lcd.print(currentPressurehp);  // Print out the Pressure.
+  lcd.print("hPa");
+  lcd.setCursor(0,1);
+  lcd.print("A=");
+  lcd.print(altitude);
+  lcd.print("m");
+  lcd.setCursor(0,2);
+  lcd.print("T=");
+  lcd.print(currentTemperature);     // Print out the Temperature
+//  Serial.write(176);
+  lcd.print("C");
+  lcd.setCursor(9,3);
+  lcd.print("   /BMP180/");
+}
+
+
+void DS18B20()
+{
+  sensors1.requestTemperatures(); // Send the command to get temperatures
+  sensors2.requestTemperatures(); // Send the command to get temperatures
+  sensors3.requestTemperatures(); // Send the command to get temperatures
+  
+  lcd.setCursor(0,0); 
+  lcd.print("T1=");
+  lcd.print(sensors1.getTempCByIndex(0));  //  Serial.print("Temperature for the device 1 (index 0) is: ");
+  lcd.print("C");
+  //lcd.setCursor(9,1);
+  //lcd.print("  /DS18B20/");
+  
+  lcd.setCursor(0,1); 
+  lcd.print("T2=");
+  lcd.print(sensors2.getTempCByIndex(0));  //  Serial.print("Temperature for the device 1 (index 0) is: ");
+  lcd.print("C");
+  //lcd.setCursor(9,1);
+  //lcd.print("  /DS18B20/");
+  
+  lcd.setCursor(0,2); 
+  lcd.print("T3=");
+  lcd.print(sensors3.getTempCByIndex(0));  //  Serial.print("Temperature for the device 1 (index 0) is: ");
+  lcd.print("C");
+  lcd.setCursor(9,3);
+  lcd.print("  /DS18B20/");
+}
+
+void LCDRain()
+{
+  int sensorA = analogRead(A0);
+  int sensorD = digitalRead(10);
+  
+  int humi = map (sensorA, 1023, 0, 0, 100);
+  
+  if (humi >= 30) {
+  tone(12, 1600, 700);}
+  /*
+  lcd.setCursor(0,0);
+  lcd.print("x=");
+  lcd.print(sensorA);
+  
+  lcd.setCursor(0,1);
+  lcd.print("y=");
+  lcd.print(sensorD);
+  */
+  lcd.setCursor(0,0);
+  lcd.print("H=");
+  lcd.print(humi);
+  lcd.print("%");
+    
+  lcd.setCursor(0,1);
+  lcd.print("State= ");
+  if (sensorD==1) {
+  lcd.print("clear");}
+  else
+  lcd.print("rain");
+ 
+  lcd.setCursor(14,3);
+  lcd.print("/rain/");
+        
+}
+
+
+void loop () 
+{
+
+LCDWelcome();
+delay(5000);
+lcd.clear();
+
+for(int i=0; i<5;i++)
+{
+LCDDS3231();
+delay(1000);
+}
+lcd.clear();
+
+for(int i=0; i<5;i++)
+{
+LCDDH11();
+delay(1000);
+}
+lcd.clear();
+
+for(int i=0; i<5;i++)
+{
+LCDDH22();
+delay(1000);
+}
+lcd.clear();
+
+for(int i=0; i<5;i++)
+{
+LCDBMP180();
+delay(1000);
+}
+lcd.clear();
+
+for(int i=0; i<5;i++)
+{
+DS18B20();
+delay(1000);
+}
+lcd.clear();
+
+for(int i=0; i<5;i++)
+{
+LCDRain();
+delay(1000);
+}
+lcd.clear();
+
+
+}
+
