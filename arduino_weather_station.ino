@@ -38,9 +38,9 @@ OneWire oneWire1(ONE_WIRE_BUS1); //setup a oneWire instance to communicate with 
 OneWire oneWire2(ONE_WIRE_BUS2); //setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
 OneWire oneWire3(ONE_WIRE_BUS3); //setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
 
-DallasTemperature sensors1(&oneWire1);  //pass our oneWire reference to Dallas Temperature. 
-DallasTemperature sensors2(&oneWire2);  //pass our oneWire reference to Dallas Temperature.
-DallasTemperature sensors3(&oneWire3);  //pass our oneWire reference to Dallas Temperature.
+DallasTemperature sensors1(&oneWire1); //pass our oneWire reference to Dallas Temperature. 
+DallasTemperature sensors2(&oneWire2); //pass our oneWire reference to Dallas Temperature.
+DallasTemperature sensors3(&oneWire3); //pass our oneWire reference to Dallas Temperature.
 
 #define LEDPIN 7
 #define RAINPIN 8
@@ -63,7 +63,7 @@ void setup()
   
   barometer = BMP180(); //we create an instance of our BMP180 sensor
   barometer.SoftReset(); //when we have connected, we reset the device to ensure a clean start
-  barometer.Initialize();  //now we initialize the sensor and pull the calibration data
+  barometer.Initialize(); //now we initialize the sensor and pull the calibration data
   
   sensors1.begin(); //start up the library
   sensors2.begin(); //start up the library
@@ -131,17 +131,17 @@ void lcdTemp()
     
   lcd.setCursor(0,1); 
   lcd.print("t2=");
-  lcd.print(sensors1.getTempCByIndex(0));  //temperature for the device 1
+  lcd.print(sensors1.getTempCByIndex(0)); //temperature for the device 1
   lcd.print("C");
 
   lcd.setCursor(0,2); 
   lcd.print("t3=");
-  lcd.print(sensors2.getTempCByIndex(0));  //temperature for the device 2
+  lcd.print(sensors2.getTempCByIndex(0)); //temperature for the device 2
   lcd.print("C");
 
   lcd.setCursor(0,0); 
   lcd.print("t1=");
-  lcd.print(sensors3.getTempCByIndex(0));  //temperature for the device 3
+  lcd.print(sensors3.getTempCByIndex(0)); //temperature for the device 3
   lcd.print("C");
  
   lcd.setCursor(13,0);
@@ -187,7 +187,7 @@ void lcdHumPres()
   float t11 = dht11.readTemperature(); //read temperature as Celsiusa
   float f11 = dht11.readTemperature(true);  //read temperature as Fahrenheit
   
-  float hi111 = dht11.computeHeatIndex(f11, h11);   //must send in temp in Fahrenheit
+  float hi111 = dht11.computeHeatIndex(f11, h11); //must send in temp in Fahrenheit
   float hi11 = (hi111-32) / 1.8;
     
   lcd.setCursor(0,0);
@@ -202,12 +202,12 @@ void lcdHumPres()
 
   float currentPressure = barometer.GetPressure(); //retrive the current pressure in Pascals
   float currentPressurehp = (currentPressure /100);
-  float altitude = barometer.GetAltitude(seaLevelPressure);   //retrive the current altitude (in meters). Current Sea Level Pressure is required for this
+  float altitude = barometer.GetAltitude(seaLevelPressure); //retrive the current altitude (in meters). Current Sea Level Pressure is required for this
   float currentTemperature = barometer.GetTemperature(); //retrive the current temperature in degrees celcius
    
   lcd.setCursor(0,2); 
   lcd.print("p=");
-  lcd.print(currentPressurehp);  //print out the Pressure
+  lcd.print(currentPressurehp); //print out the Pressure
   lcd.print("hPa");
   
   lcd.setCursor(13,0);
